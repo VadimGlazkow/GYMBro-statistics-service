@@ -7,9 +7,14 @@ Base = declarative_base()
 
 
 def normalize_database_url(url: str) -> str:
-    """Render иногда отдаёт postgres:// — SQLAlchemy ожидает postgresql://."""
+    """
+    Render часто отдаёт postgres:// — приводим к формату SQLAlchemy.
+    postgresql+psycopg2:// явно указывает драйвер (psycopg2-binary).
+    """
     if url.startswith("postgres://"):
-        return url.replace("postgres://", "postgresql://", 1)
+        url = url.replace("postgres://", "postgresql://", 1)
+    if url.startswith("postgresql://") and "+psycopg2" not in url:
+        url = url.replace("postgresql://", "postgresql+psycopg2://", 1)
     return url
 
 
