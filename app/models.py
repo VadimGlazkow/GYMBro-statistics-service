@@ -42,6 +42,8 @@ class ExerciseSet(Base):
     distance_km = Column(Float, nullable=True)
     feeling = Column(String(20), nullable=True)
 
+    exercise_log = relationship("ExerciseLog", back_populates="sets")
+
 
 class FoodIntake(Base):
     __tablename__ = "food_intakes"

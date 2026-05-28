@@ -3,6 +3,7 @@ from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     DATABASE_URL: str
+    DATABASE_SSL_MODE: str | None = None
     JWT_SECRET: str
     JWT_ALGORITHM: str = "HS256"
     NINJAS_API_KEY: str | None = None

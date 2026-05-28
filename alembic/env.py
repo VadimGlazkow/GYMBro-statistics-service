@@ -1,24 +1,22 @@
 # alembic/env.py
 # -*- coding: utf-8 -*-
 
-import asyncio
 from logging.config import fileConfig
 
 from sqlalchemy import pool
 from sqlalchemy.engine import Connection
-from sqlalchemy import create_engine
 
 from alembic import context
 
-# ====================== ИМПОРТЫ ИЗ ПРОЕКТА ======================
+from app.database import Base, create_db_engine, normalize_database_url
 from app.config import settings
-from app.database import Base
-from app.models import *          # Импортируем все модели
+from app.models import *  # noqa: F401,F403
 
 config = context.config
-
-# Устанавливаем DATABASE_URL из .env
-config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
+config.set_main_option(
+    "sqlalchemy.url",
+    normalize_database_url(settings.DATABASE_URL),
+)
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
@@ -49,10 +47,7 @@ def do_run_migrations(connection: Connection) -> None:
 
 def run_migrations_online() -> None:
     """Запуск миграций в online режиме (синхронный)."""
-    connectable = create_engine(
-        config.get_main_option("sqlalchemy.url"),
-        poolclass=pool.NullPool,
-    )
+    connectable = create_db_engine(poolclass=pool.NullPool)
 
     with connectable.connect() as connection:
         do_run_migrations(connection)

@@ -1,5 +1,6 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from app.routers.food import router as food_router
 from app.routers.workouts import router as workouts_router
@@ -44,12 +45,15 @@ async def root():
 
 
 @app.exception_handler(Exception)
-async def global_exception_handler(request, exc):
+async def global_exception_handler(request: Request, exc: Exception):
     """
     Ловит все необработанные ошибки и возвращает понятный JSON.
     """
-    return {
-        "success": False,
-        "error_message": "Произошла внутренняя ошибка сервера",
-        "detail": str(exc)
-    }
+    return JSONResponse(
+        status_code=500,
+        content={
+            "success": False,
+            "error_message": "Произошла внутренняя ошибка сервера",
+            "detail": str(exc),
+        },
+    )

@@ -3,25 +3,29 @@ from datetime import date
 from typing import List, Optional
 
 
-class FoodCreate(BaseModel):
-    """
-    Запрос на добавление записи о питании.
-    Принимает весь текст, который ввёл пользователь.
-    """
-    raw_text: str = Field(
-        ...,
-        description="Полный текст питания от пользователя (например: 'курица 200г, рис 150г, борщ 400г')"
-    )
-    intake_date: Optional[date] = Field(
-        None,
-        description="Дата приёма пищи (если не указана — используется текущая)"
-    )
+class NutritionCreateRequest(BaseModel):
+    raw_text: str = Field(..., description="Свободный текст питания от пользователя")
+    intake_date: Optional[date] = Field(None, description="Дата приёма пищи (по умолчанию сегодня)")
 
 
-class FoodItemResponse(BaseModel):
-    """
-    Информация по одному продукту после обработки.
-    """
+class WorkoutCreateRequest(BaseModel):
+    raw_text: str = Field(..., description="Свободный текст тренировки от пользователя")
+    workout_date: Optional[date] = Field(None, description="Дата тренировки (по умолчанию сегодня)")
+
+
+class NutritionSaveResponse(BaseModel):
+    success: bool
+    intake_id: int
+    date: date
+
+
+class WorkoutSaveResponse(BaseModel):
+    success: bool
+    workout_id: int
+    date: date
+
+
+class NutritionItem(BaseModel):
     product_name: str
     grams: float
     calories: float
@@ -30,66 +34,81 @@ class FoodItemResponse(BaseModel):
     carbs: float
 
 
-class FoodResponse(BaseModel):
-    """
-    Ответ после обработки питания.
-    """
+class NutritionResponse(BaseModel):
     success: bool
-    items: Optional[List[FoodItemResponse]] = Field(None, description="Список обработанных продуктов")
-    error_message: Optional[str] = Field(None, description="Сообщение об ошибке, если что-то пошло не так")
-    fallback_used: bool = Field(False, description="True, если использовалась нейросеть (fallback)")
+    items: Optional[List[NutritionItem]] = None
+    error_message: Optional[str] = None
 
 
-class ExerciseSetCreate(BaseModel):
-    """
-    Один подход в упражнении.
-    """
-    weight_kg: Optional[float] = Field(None, description="Вес в килограммах")
-    reps: Optional[int] = Field(None, description="Количество повторений")
-    duration_seconds: Optional[int] = Field(None, description="Время в секундах")
-    distance_km: Optional[float] = Field(None, description="Дистанция в километрах")
-    feeling: Optional[str] = Field(None, description="Субъективное ощущение")
+class ExerciseSet(BaseModel):
+    weight_kg: Optional[float] = None
+    reps: Optional[int] = None
+    duration_seconds: Optional[int] = None
+    distance_km: Optional[float] = None
+    feeling: Optional[str] = None
 
 
-class ExerciseCreate(BaseModel):
-    """
-    Одно упражнение (может содержать несколько подходов).
-    """
-    exercise_name: str = Field(..., description="Название упражнения")
-    exercise_type: str = Field(..., description="Тип упражнения: weight_reps, bodyweight_reps, timed, cardio_distance, other")
-    muscle_group: Optional[str] = Field(None, description="Группа мышц")
-    sets: List[ExerciseSetCreate] = Field(..., description="Список подходов")
-    raw_input_text: Optional[str] = Field(None, description="Оригинальный текст этого упражнения")
+class Exercise(BaseModel):
+    exercise_name: str
+    exercise_type: str
+    muscle_group: Optional[str] = None
+    sets: List[ExerciseSet]
+    raw_input_text: Optional[str] = None
 
 
-class WorkoutCreate(BaseModel):
-    """
-    Запрос на добавление всей тренировки.
-    Принимает список упражнений от AI Service.
-    """
-    exercises: List[ExerciseCreate] = Field(..., description="Список упражнений в тренировке")
+class TrainingParseResponse(BaseModel):
+    success: bool
+    exercises: Optional[List[Exercise]] = None
+    error_message: Optional[str] = None
 
 
-class WorkoutResponse(BaseModel):
-    """
-    Ответ после сохранения тренировки.
-    """
-    id: int
-    workout_date: date
+class DailyWorkoutSummary(BaseModel):
+    date: date
+    exercises: List[str] = Field(..., description="Список названий упражнений в этот день")
 
 
-class SummaryResponse(BaseModel):
-    """
-    Ответ с агрегированной статистикой.
-    """
+class ExercisePeriodStats(BaseModel):
+    exercise_name: str
+    muscle_group: Optional[str] = None
+    total_sets: int
+    avg_sets_per_workout: float
+    max_weight_kg: Optional[float] = None
+    avg_weight_kg: Optional[float] = None
+    max_duration_seconds: Optional[int] = None
+    avg_duration_seconds: Optional[float] = None
+    max_distance_km: Optional[float] = None
+    avg_distance_km: Optional[float] = None
+
+
+class WorkoutPeriodStats(BaseModel):
+    start_date: date
+    end_date: date
     period_days: int
-    total_calories: float
-    avg_calories_per_day: float
-    total_protein: float
-    avg_protein_per_day: float
-    total_fat: float
-    avg_fat_per_day: float
-    total_carbs: float
-    avg_carbs_per_day: float
     total_workouts: int
-    total_volume_kg: Optional[float] = None
+    exercise_stats: List[ExercisePeriodStats]
+    daily_summaries: List[DailyWorkoutSummary]
+
+
+class DailyNutritionSummary(BaseModel):
+    date: date
+    calories: float
+    protein: float
+    fat: float
+    carbs: float
+
+
+class NutritionPeriodStats(BaseModel):
+    start_date: date
+    end_date: date
+    period_days: int
+    avg_calories: float
+    avg_protein: float
+    avg_fat: float
+    avg_carbs: float
+    daily_summaries: List[DailyNutritionSummary]
+
+
+class CombinedStatsResponse(BaseModel):
+    """Обёртка для возврата полной статистики. Совпадает с RecommendationRequest."""
+    workouts: WorkoutPeriodStats
+    nutrition: NutritionPeriodStats
